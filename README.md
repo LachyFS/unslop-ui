@@ -82,3 +82,7 @@ unslop-ui . --json
 Unslop UI does not try to judge beauty. It catches repeatable design debt and AI-generated UI anti-patterns.
 
 The scanner is static and deterministic in V0. It does not use screenshots, Playwright, Figma, or model-based judging.
+
+## Attribution
+
+Unslop UI's one-command audit workflow is inspired by [React Doctor](https://github.com/millionco/react-doctor). React Doctor focuses on React correctness, performance, architecture, security, and accessibility; Unslop UI applies a similar product shape to frontend design-system drift and AI-generated UI anti-patterns.
