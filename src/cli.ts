@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { pathToFileURL } from "node:url";
 import { Command } from "commander";
 import { isFailingSeverity } from "./core/severities";
@@ -71,7 +73,17 @@ export async function runCli(args: string[], io: CliIo = {}): Promise<number> {
   }
 }
 
-if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+function isDirectRun(): boolean {
+  if (!process.argv[1]) return false;
+
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return pathToFileURL(process.argv[1]).href === import.meta.url;
+  }
+}
+
+if (isDirectRun()) {
   runCli(process.argv.slice(2)).then((exitCode) => {
     process.exitCode = exitCode;
   });
