@@ -1,7 +1,7 @@
 import type { Severity } from "./severities";
 
 export const TOOL_NAME = "unslop-ui";
-export const TOOL_VERSION = "0.1.1";
+export const TOOL_VERSION = "0.1.2";
 
 export type Category =
   | "design-system"
@@ -22,6 +22,10 @@ export interface Finding {
   category: Category;
   confidence: Confidence;
   suggestion?: string;
+  /** The offending source line, captured at scan time for code frames. */
+  snippet?: string;
+  /** Stable, line-independent identifier used for baselines and dedup. */
+  fingerprint?: string;
 }
 
 export interface ClassNameUsage {
@@ -96,4 +100,6 @@ export interface ScanResult {
   filesScanned: number;
   findingCount: number;
   findings: Finding[];
+  /** Number of findings hidden by an active baseline, if any. */
+  suppressedCount?: number;
 }

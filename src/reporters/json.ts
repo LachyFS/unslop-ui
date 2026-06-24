@@ -1,6 +1,9 @@
 import type { ScanResult } from "../core/types";
+import { summarizeFindings } from "./summary";
 
 export function formatJsonReport(result: ScanResult): string {
+  const summary = summarizeFindings(result.findings);
+
   return `${JSON.stringify(
     {
       tool: result.tool,
@@ -9,6 +12,8 @@ export function formatJsonReport(result: ScanResult): string {
       label: result.label,
       filesScanned: result.filesScanned,
       findingCount: result.findingCount,
+      ...(result.suppressedCount !== undefined ? { suppressedCount: result.suppressedCount } : {}),
+      summary,
       findings: result.findings.map((finding) => ({
         ruleId: finding.ruleId,
         severity: finding.severity,
@@ -19,6 +24,7 @@ export function formatJsonReport(result: ScanResult): string {
         column: finding.column,
         message: finding.message,
         suggestion: finding.suggestion,
+        fingerprint: finding.fingerprint,
       })),
     },
     null,

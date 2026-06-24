@@ -1,5 +1,7 @@
 import pc from "picocolors";
 import type { Category, Finding, ScanResult } from "../core/types";
+import { renderCodeFrame } from "./code-frame";
+import { summarizeFindings } from "./summary";
 
 export interface TerminalReportOptions {
   maxFindings?: number;
@@ -19,7 +21,10 @@ export function formatTerminalReport(
   options: TerminalReportOptions = {},
 ): string {
   if (options.quiet) {
-    return `Unslop UI: ${result.score}/100 - ${result.label}; ${result.findingCount} findings in ${result.filesScanned} files\n`;
+    const suppressed = result.suppressedCount
+      ? `, ${result.suppressedCount} baselined`
+      : "";
+    return `Unslop UI: ${result.score}/100 - ${result.label}; ${result.findingCount} findings${suppressed} in ${result.filesScanned} files\n`;
   }
 
   const maxFindings = options.maxFindings ?? 20;
@@ -31,13 +36,21 @@ export function formatTerminalReport(
     `Findings: ${result.findingCount}`,
   ];
 
+  if (result.suppressedCount) {
+    lines.push(pc.dim(`Baseline: ${result.suppressedCount} known finding(s) suppressed`));
+  }
+
   if (result.findings.length === 0) {
-    lines.push("", pc.green("No findings. The UI surface looks controlled."));
+    const message = result.suppressedCount
+      ? "No new findings since the baseline. Nothing to fix."
+      : "No findings. The UI surface looks controlled.";
+    lines.push("", pc.green(message));
     return `${lines.join("\n")}\n`;
   }
 
   const errors = result.findings.filter((finding) => finding.severity === "error");
   const warnings = result.findings.filter((finding) => finding.severity === "warn");
+  const summary = summarizeFindings(result.findings);
 
   appendFindingGroup(lines, "High impact", errors, maxFindings);
   appendFindingGroup(lines, "Warnings", warnings, Math.max(0, maxFindings - errors.length));
@@ -47,9 +60,19 @@ export function formatTerminalReport(
     lines.push("", pc.dim(`Showing ${maxFindings} of ${result.findings.length} findings. Re-run with --verbose to show all.`));
   }
 
+  lines.push("", pc.bold("Fix first"));
+  for (const item of summary.topFiles.slice(0, 5)) {
+    lines.push(`  ${item.filePath}: ${formatCount(item.count)}`);
+  }
+
+  lines.push("", pc.bold("Summary by rule"));
+  for (const item of summary.byRule) {
+    lines.push(`  ${item.ruleId}: ${item.count}`);
+  }
+
   lines.push("", pc.bold("Summary by category"));
-  for (const [category, count] of getCategoryCounts(result.findings)) {
-    lines.push(`  ${CATEGORY_LABELS[category]}: ${count}`);
+  for (const item of summary.byCategory) {
+    lines.push(`  ${CATEGORY_LABELS[item.category]}: ${item.count}`);
   }
 
   return `${lines.join("\n")}\n`;
@@ -65,11 +88,19 @@ function appendFindingGroup(
 
   lines.push("", pc.bold(title));
   for (const finding of findings.slice(0, maxCount)) {
+    const location = finding.line
+      ? `:${finding.line}${finding.column ? `:${finding.column}` : ""}`
+      : "";
     lines.push(`  ${formatSeverity(finding.severity)} ${finding.ruleId}`);
-    lines.push(`  ${finding.filePath}${finding.line ? `:${finding.line}` : ""}`);
+    lines.push(`  ${pc.cyan(`${finding.filePath}${location}`)}`);
     lines.push(`  ${finding.message}`);
+    for (const frameLine of renderCodeFrame(finding.snippet, finding.line, finding.column, {
+      caret: finding.severity === "error" ? pc.red : pc.yellow,
+    })) {
+      lines.push(`    ${frameLine}`);
+    }
     if (finding.suggestion) {
-      lines.push(`  ${pc.dim(finding.suggestion)}`);
+      lines.push(`  ${pc.dim(`→ ${finding.suggestion}`)}`);
     }
     lines.push("");
   }
@@ -90,11 +121,6 @@ function colorScore(score: number, value: string): string {
   return pc.red(value);
 }
 
-function getCategoryCounts(findings: Finding[]): Array<[Category, number]> {
-  const counts = new Map<Category, number>();
-  for (const finding of findings) {
-    counts.set(finding.category, (counts.get(finding.category) ?? 0) + 1);
-  }
-
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+function formatCount(count: number): string {
+  return count === 1 ? "1 finding" : `${count} findings`;
 }

@@ -10,6 +10,24 @@ Unslop UI is a deterministic CLI for scanning React, Tailwind, and shadcn/ui cod
 npx unslop-ui .
 ```
 
+Findings are printed with a code frame pointing at the exact offending line:
+
+```
+High impact
+  error ui-slop/raw-hex-colors
+  app/page.tsx:5:39
+  Found 2 raw hex colors. Prefer semantic tokens or Tailwind theme colors.
+    5 │     <main className="min-h-screen bg-[#f7f8ff] text-[#111827]">
+      ╵                                       ^
+  → Move color choices into semantic tokens such as bg-card, text-foreground, or primary.
+```
+
+Scaffold a config:
+
+```bash
+npx unslop-ui --init
+```
+
 Local development:
 
 ```bash
@@ -66,16 +84,45 @@ Rules can be disabled with `"off"`.
 ## CI
 
 ```bash
-pnpm unslop-ui . --strict
+unslop-ui . --strict
 ```
 
 By default the CLI exits non-zero only for `error` findings. `--strict` treats warnings as build-failing.
 
-Use JSON for machines:
+### Output formats
 
 ```bash
-unslop-ui . --json
+unslop-ui . --format pretty   # default, with code frames
+unslop-ui . --format json     # structured report (--json is a shorthand)
+unslop-ui . --format sarif     # SARIF 2.1.0 for GitHub code scanning
 ```
+
+SARIF lets findings show up as inline annotations on a pull request:
+
+```yaml
+# .github/workflows/unslop.yml
+- run: npx unslop-ui . --format sarif > unslop.sarif
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: unslop.sarif
+```
+
+### Baselines (adopt on an existing codebase)
+
+A repository with hundreds of existing findings can still gate *new* slop. Record
+the current state once, commit the baseline, then fail CI only on regressions:
+
+```bash
+# Snapshot today's findings (writes unslop.baseline.json)
+unslop-ui . --update-baseline
+
+# In CI: known findings are suppressed, new ones fail the build
+unslop-ui . --baseline --strict
+```
+
+Baselines fingerprint each finding by rule, file, and offending code — not by line
+number — so they keep matching as the surrounding file changes. Use
+`--baseline <path>` to point at a custom location.
 
 ## Philosophy
 
