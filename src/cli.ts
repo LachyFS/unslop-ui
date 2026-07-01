@@ -178,8 +178,24 @@ function runInit(
 const CONFIG_TEMPLATE = `import { defineConfig } from "unslop-ui";
 
 export default defineConfig({
-  include: ["app/**/*.{tsx,jsx}", "components/**/*.{tsx,jsx}"],
-  ignore: ["node_modules/**", ".next/**", "dist/**"],
+  include: [
+    "app/**/*.{ts,tsx,js,jsx}",
+    "pages/**/*.{ts,tsx,js,jsx}",
+    "components/**/*.{ts,tsx,js,jsx}",
+    "src/**/*.{ts,tsx,js,jsx}",
+    "apps/*/{app,pages,components,src}/**/*.{ts,tsx,js,jsx}",
+    "packages/*/{app,pages,components,src}/**/*.{ts,tsx,js,jsx}",
+  ],
+  ignore: [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/.turbo/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/*.test.*",
+    "**/*.spec.*",
+  ],
   stack: {
     react: true,
     tailwind: true,
