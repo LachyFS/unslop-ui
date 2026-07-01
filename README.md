@@ -56,8 +56,24 @@ Create `unslop.config.ts`:
 import { defineConfig } from "unslop-ui";
 
 export default defineConfig({
-  include: ["app/**/*.{tsx,jsx}", "components/**/*.{tsx,jsx}"],
-  ignore: ["node_modules/**", ".next/**", "dist/**"],
+  include: [
+    "app/**/*.{ts,tsx,js,jsx}",
+    "pages/**/*.{ts,tsx,js,jsx}",
+    "components/**/*.{ts,tsx,js,jsx}",
+    "src/**/*.{ts,tsx,js,jsx}",
+    "apps/*/{app,pages,components,src}/**/*.{ts,tsx,js,jsx}",
+    "packages/*/{app,pages,components,src}/**/*.{ts,tsx,js,jsx}",
+  ],
+  ignore: [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/.turbo/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/*.test.*",
+    "**/*.spec.*",
+  ],
   stack: {
     react: true,
     tailwind: true,
@@ -80,6 +96,32 @@ export default defineConfig({
 ```
 
 Rules can be disabled with `"off"`.
+
+### Turborepo and monorepos
+
+Unslop UI scans common Turborepo layouts out of the box:
+
+- `apps/*/{app,pages,components,src}/**/*.{ts,tsx,js,jsx}`
+- `packages/*/{app,pages,components,src}/**/*.{ts,tsx,js,jsx}`
+
+Generated workspace output is ignored by default, including nested `.turbo`,
+`.next`, `dist`, `build`, and `coverage` directories.
+
+Add an `unslop-ui` script to each app or package you want Turbo to check:
+
+```json
+{
+  "scripts": {
+    "lint:ui": "unslop-ui . --strict"
+  }
+}
+```
+
+Then run it across the repo:
+
+```bash
+turbo run lint:ui
+```
 
 ## CI
 

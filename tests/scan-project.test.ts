@@ -43,6 +43,16 @@ describe("scanProject", () => {
     expect(ruleIds).toContain("ui-slop/random-radius");
   });
 
+  it("scans common Turborepo app and package workspaces by default", async () => {
+    const result = await scanProject("fixtures/turborepo", { cwd: process.cwd() });
+    const scannedPaths = new Set(result.findings.map((finding) => finding.filePath));
+
+    expect(result.filesScanned).toBe(2);
+    expect(scannedPaths).toContain("apps/web/app/page.tsx");
+    expect(scannedPaths).toContain("packages/ui/src/card.tsx");
+    expect(scannedPaths).not.toContain("apps/web/src/generated.test.tsx");
+  });
+
   it("emits valid JSON from the CLI", async () => {
     const stdout = createWritableBuffer();
     const stderr = createWritableBuffer();
